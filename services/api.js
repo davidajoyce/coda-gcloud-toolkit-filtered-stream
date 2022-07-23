@@ -7,10 +7,10 @@ async function getTrends(minutes) {
     return new Promise(function (resolve, reject) {
 
         const bigqueryClient = new BigQuery();
-        let tableName = config.gcp_infra.bq.dataSetId + '.' + config.gcp_infra.bq.table.tweets;
-        console.log('getTrends SQL ', utils.getTrends(tableName, minutes));
+        let tableName = config.gcp_infra.projectId + '.' + config.gcp_infra.bq.dataSetId + '.' + config.gcp_infra.bq.table.tweets;
+        console.log('getTrends SQL ', utils.getTrendsInfo(tableName, minutes));
         const options = {
-            query: utils.getTrends(tableName, minutes),
+            query: utils.getTrendsInfo(tableName, minutes),
             location: 'US',
         };
 

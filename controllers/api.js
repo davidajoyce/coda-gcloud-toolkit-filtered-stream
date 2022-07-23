@@ -14,10 +14,12 @@ router.get("/", function (req, res) {
 router.get("/trends", function (req, res) {
     console.log('-- API Services | Trending Data -- ');
     var map = new HashMap();
-    api_svcs.getTrends(60).then(function (results)  {
+
+    api_svcs.getTrends(540).then(function (results)  {
         if(results) {
-            results[0].forEach(function (annotation, index)    {
-                //console.log('Annotation ',annotation.ENTITY);
+            console.log('result is ',results[0])
+            /*results[0].forEach(function (annotation, index)    {
+                console.log('Annotation ',annotation.ENTITY);
                 if( map.get(annotation.ENTITY_TYPE) === undefined )  {
                     map.set(annotation.ENTITY_TYPE, 1);
                 } else{
@@ -26,8 +28,11 @@ router.get("/trends", function (req, res) {
                 }
                 
             });
+            */
+           res.send(results[0])
         }
-        res.send(map.entries());
+        //res.send(map.entries());
+        //res.send(results)
     });
     
 });
