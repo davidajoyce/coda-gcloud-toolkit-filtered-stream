@@ -11,11 +11,13 @@ router.get("/", function (req, res) {
     res.send('API Services');
 });
 
-router.get("/trends", function (req, res) {
+router.get("/trends/:minutes", function (req, res) {
     console.log('-- API Services | Trending Data -- ');
     var map = new HashMap();
+    var minutes = req.params.minutes
+    console.log("minutes:", minutes)
 
-    api_svcs.getTrends(540).then(function (results)  {
+    api_svcs.getTrends(minutes).then(function (results)  {
         if(results) {
             console.log('result is ',results[0])
             /*results[0].forEach(function (annotation, index)    {
