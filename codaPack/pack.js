@@ -1,11 +1,37 @@
 import * as coda from "@codahq/packs-sdk";
 export const pack = coda.newPack();
 
+// Regular expression used to parse repo URLs.
+const RepoUrlRegex = new RegExp("^https://github.com/([^/]+)/([^/]+)");
+
 // How many items to fetch per-page when making API list requests.
 const PageSize = 50;
 
 // Allow the Pack to access the GitHub domain.
 pack.addNetworkDomain("twittercodahackathon.ts.r.appspot.com");
+
+
+// Setup per-user authentication using GitHub's OAuth2.
+// Remember to set your client ID and secret in the "Settings" tab.
+// See https://docs.github.com/en/developers/apps/building-oauth-apps
+/*
+pack.setUserAuthentication({
+  type: coda.AuthenticationType.OAuth2,
+  authorizationUrl: "https://github.com/login/oauth/authorize",
+  tokenUrl: "https://github.com/login/oauth/access_token",
+  tokenPrefix: "token",
+  scopes: ["repo", "user"],
+
+  // Determines the name of the GitHub account that was connected.
+  getConnectionName: async function (context) {
+    let response = await context.fetcher.fetch({
+      method: "GET",
+      url: "https://api.github.com/user",
+    });
+    return response.body.login;
+  },
+});
+*/
 
 // A schema that defines a trends object.
 const TrendSchema = coda.makeObjectSchema({
@@ -79,6 +105,38 @@ pack.addFormula({
   },
 });
 
+// A column format that automatically applies the Repo() formula.
+pack.addColumnFormat({
+  name: "TweetInfo",
+  instructions: "Show details about a GitHub repo, given a URL.",
+  formulaName: "TweetInfo",
+  //matchers: [RepoUrlRegex],
+});
+
+// An action formula that allows a user to star a repo.
+/*
+pack.addFormula({
+  name: "Star",
+  description: "Add a star to a repo.",
+  parameters: [
+    coda.makeParameter({
+      type: coda.ParameterType.String,
+      name: "url",
+      description: "The URL of the repo.",
+    }),
+  ],
+  resultType: coda.ValueType.Boolean,
+  isAction: true,
+  execute: async function ([url], context) {
+    let { owner, name } = parseRepoUrl(url);
+    let response = await context.fetcher.fetch({
+      method: "PUT",
+      url: `https://api.github.com/user/starred/${owner}/${name}`,
+    });
+    return true;
+  },
+});
+*/
 
 // A sync table that lists all of the trends you created.
 pack.addSyncTable({
@@ -95,22 +153,47 @@ pack.addSyncTable({
         name: "dateTime",
         description: "input date and time",
       }),
+      coda.makeParameter({
+        type: coda.ParameterType.String,
+        name: "trendRule",
+        description: "define trend rule",
+      })
       ],
-    execute: async function ([dateTime], context) {
+    execute: async function ([dateTime,trendRule], context) {
       // Get the page to start from.
       //let page = (context.sync.continuation?.page as number) || 1;
       // convert to minutes
-      let minutes = Math.trunc((Date.now() - dateTime.getTime())/60000)
-      console.log("minutes: ", minutes)
+
+      //let minutes = Math.trunc((Date.now() - dateTime.getTime())/60000)
+      //console.log("minutes: ", minutes)
+      // {  "add": [ { "value" : "(doge) sample:10"}] }
+
+      var value = {"add": [{"value": trendRule}]}
+      let docId = context.invocationLocation.docId
 
       let response = await context.fetcher.fetch({
+      url: "https://twittercodahackathon.ts.r.appspot.com/rules",
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        rule: value,
+        documentId: docId
+      }),
+    });
+
+      console.log("rule respone, ", response.body)
+    
+      let trendResponse = await context.fetcher.fetch({
       method: "GET",
-      url: `https://twittercodahackathon.ts.r.appspot.com/api/trends/${minutes}`,
+      url: `https://twittercodahackathon.ts.r.appspot.com/api/trends/${60}`,
       cacheTtlSecs: 0
        });
-      let trends = response.body;
+      let trends = trendResponse.body;
       console.log("results are", trends)
-
+      
+    
       // If there were some results, re-run this formula for the next page.
       /*let continuation;
       if (repos.length > 0) {
@@ -143,6 +226,16 @@ pack.addSyncTable({
       }),
       ],
     execute: async function ([recentSearch], context) {
+      // Get the page to start from.
+      //let page = (context.sync.continuation?.page as number) || 1;
+      // convert to minutes
+      let endpoint = context.endpoint
+      console.log("endpoint, ", endpoint)
+      let test = context.invocationLocation.protocolAndHost
+      console.log("protocol and host ", test)
+      let docId = context.invocationLocation.docId
+      console.log("docId,", docId)
+    
       let response = await context.fetcher.fetch({
       method: "GET",
       url: `https://twittercodahackathon.ts.r.appspot.com/search/${recentSearch}`,
@@ -150,6 +243,7 @@ pack.addSyncTable({
        });
       let recentSearchResult = response.body;
       console.log("recent search results are", recentSearchResult)
+    
 
       // If there were some results, re-run this formula for the next page.
       /*let continuation;
@@ -165,3 +259,16 @@ pack.addSyncTable({
     },
   },
 });
+
+
+// A helper function that parses a repo URL and returns the owner and name.
+function parseRepoUrl(url) {
+  let match = url.match(RepoUrlRegex);
+  if (!match) {
+    throw new coda.UserVisibleError("Invalid repo URL: " + url);
+  }
+  return {
+    owner: match[1],
+    name: match[2],
+  };
+}

@@ -5,9 +5,32 @@ const config = require('../config.js');
 const bigquery = new BigQuery();
 const fs = require('fs');
 
+const Knex = require('knex');
+const { gcp_infra } = require("../config.js");
+
 const pubSubClient = new PubSub();
 const subClient = new v1.SubscriberClient();
 var counter;
+
+const { initializeApp, applicationDefault, cert } = require('firebase-admin/app');
+const { getFirestore, Timestamp, FieldValue } = require('firebase-admin/firestore');
+
+/*
+initializeApp({
+    credential: applicationDefault()
+  });
+  
+const db = getFirestore();
+*/
+const serviceAccount = require('./serviceAccountKey.json');
+
+initializeApp({
+  credential: cert(serviceAccount)
+});
+
+const db = getFirestore();
+
+
 
 async function synchronousPull(projectId, subscriptionName, maxMessagesToPull) {
     const formattedSubscription = subClient.subscriptionPath(
@@ -30,7 +53,8 @@ async function synchronousPull(projectId, subscriptionName, maxMessagesToPull) {
     var tweets = [];
 
     for (const message of response.receivedMessages) {
-        //console.log('Received Message :- ',message.message.data.toString());
+        //console.log('Received message 1: ', message.message)
+        console.log('Received Message :- ',message.message.data.toString());
         tweets.push(JSON.parse(message.message.data.toString()));
         ackIds.push(message.ackId);
     }
@@ -78,6 +102,23 @@ async function provisionDB() {
         })
     })
 }
+
+const createUnixSocketPool = async configUnix => {
+    // Note: Saving credentials in environment variables is convenient, but not
+    // secure - consider a more secure solution such as
+    // Cloud Secret Manager (https://cloud.google.com/secret-manager) to help
+    // keep secrets safe.
+    return Knex({
+      client: 'pg',
+      connection: {
+        user: config.gcp_infra.cloudsql.user, // e.g. 'my-user'
+        password: config.gcp_infra.cloudsql.password, // e.g. 'my-user-password'
+        database: config.gcp_infra.cloudsql.database, // e.g. 'my-database'
+        host: config.gcp_infra.cloudsql.instanceUnixSocket, 
+        ...configUnix// e.g. '/cloudsql/project:region:instance'
+      }
+    });
+  };
 
 async function setupMsgInfra() {
     return new Promise(function (resolve, reject) {
@@ -187,6 +228,7 @@ async function insertTweets(data) {
     var resultRows = [];
     data.forEach(function (tweetData, index) {
         let tweet = JSON.parse(tweetData).data;
+        let matching_rules = JSON.parse(tweetData).matching_rules
         if (tweet) {
             var cDate = new Date(tweet.created_at);
             if (tweet.context_annotations === undefined)
@@ -198,6 +240,7 @@ async function insertTweets(data) {
                 text: tweet.text,
                 source: tweet.source,
                 author_id: tweet.author_id,
+                tag_id: matching_rules[0].tag,
                 conversation_id: tweet.conversation_id,
                 created_at: BigQuery.datetime(cDate.toISOString()),
                 lang: tweet.lang,
@@ -257,4 +300,4 @@ async function insertStreamResults(results) {
     }
 }
 
-module.exports = { provisionDB, setupMsgInfra, cleanUp, publishMessage, synchronousPull };
+module.exports = { provisionDB, setupMsgInfra, cleanUp, publishMessage, synchronousPull, createUnixSocketPool, db };

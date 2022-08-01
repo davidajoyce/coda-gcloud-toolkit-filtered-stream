@@ -2,6 +2,7 @@ const express = require("express");
 const gcp_infra_svcs = require('.././services/gcp-infra.js');
 const config = require('../config.js');
 const needle = require('needle');
+const api_svcs = require('.././services/api.js');
 
 const router = express.Router();
 
@@ -54,6 +55,34 @@ router.get("/poll/:frequency/:delay", function (req, res) {
     res.send('polling Tweets from PubSub');
 });
 
+router.get("/push", function (req, res) {
+    console.log('-- API Services | Trending Data -- ');
+    var map = new HashMap();
+    //var minutes = req.params.minutes
+    //console.log("minutes:", minutes)
+
+    api_svcs.getTrends(60).then(function (results)  {
+        if(results) {
+            console.log('result is ',results[0])
+            results[0].forEach(element => {
+            // de deduplicate the results
+            if(map.has(element["TWEET_TXT"])){
+                console.log("already have this result")
+            } else {
+                map.set(element["TWEET_TXT"], element)
+            }
+           });
+           sendTweetsToCoda(map.values)
+           res.send(map.values());
+        }
+    });
+});
+
+async function sendTweetsToCoda() {
+
+
+}
+
 async function streamTweets() {
     console.log('Streaming Tweets ..')
     //Listen to the stream
@@ -75,6 +104,7 @@ async function streamTweets() {
         var splited_payload = '';
         try {
             const json_payload = data.toString();
+            //console.log("Received payload is ", json_payload);
             console.log('Received Tweet ',json_payload.substring(39,45));
             if (json_payload) {
                 try {
