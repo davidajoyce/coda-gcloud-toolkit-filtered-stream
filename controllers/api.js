@@ -67,7 +67,7 @@ router.get("/coda", function(req, res) {
     }
 })
 
-router.get("/mail", function(req, res) {
+router.get("/mail/:minutes", function(req, res) {
 
       // get all the tagIds and corresponding email address
       // for each tagId grab the sql query json 
@@ -77,8 +77,11 @@ router.get("/mail", function(req, res) {
       let tagId = '09c7f63e-7762-4c85-a273-ff50a734f8da'
       api_svcs.setDocumentData('davidajoyce141@gmail.com', tagId)
       //tagIdsToEmailAddress = [{tagId: "test", emailAdress: "test@gmail.com"}] 
-      
+      var map = new HashMap();
       //emailAddress.tagId = tagId
+
+      var minutes = req.params.minutes
+      console.log("minutes:", minutes)
       
       tagIdsToEmailAddress = getTagsIdsFromEmail(tagId)
       //tagIdsToEmailAddress.push(emailAddress)
@@ -87,8 +90,23 @@ router.get("/mail", function(req, res) {
       tagIdsToEmailAddress.then(function(tagsToEmails){
         console.log('tagsToEmails: ', tagsToEmails)
         tagsToEmails.forEach( tagIdEmail => {
-            let tweets = api_svcs.getTrendsFromTag(1440, tagIdEmail.tagId)
-            sendEmail(tagIdEmail.emailAdress, tweets)
+            api_svcs.getTrendsFromTag(minutes, tagIdEmail.tagId).then(function(results){
+                if(results) {
+                    console.log("results are :", results)
+                    console.log('result is ',results[0])
+
+                    results[0].forEach(element => {
+                        // de deduplicate the results
+                        if(map.has(element["TWEET_TXT"])){
+                            console.log("already have this result")
+                        } else {
+                            map.set(element["TWEET_TXT"], element)
+                        }
+                       });
+                    console.log("tweets to send to mail, ", map.values())
+                    sendEmail(tagIdEmail.email, map.values())
+                }
+            })
         })
       }).catch(function(error){
         console.log('error :', error)
@@ -144,25 +162,33 @@ router.get("/push/:minutes", function (req, res) {
 });
 
 function sendEmail(emailAdress, tweets){
-    let bodyText = ''
+    var bodyText = ''
     tweets.forEach(tweet => {
-        bodyText + tweet.TWEET_TXT + '\r\n' + tweet.TWEET_URL
+        bodyText = bodyText + tweet.TWEET_TXT + "," + "\r\n" + tweet.TWEET_URL + "\r\n\n"
     })
+
+    console.log("email address is ", emailAdress)
+    console.log("body text is: ", bodyText)
+
+
+    let textForEmail = 'Hi from your coda twitter trend pack, here are your top tweets:\r\n\n' + bodyText
+
+    console.log("email text: ", textForEmail)
 
     let mailOptions = {
         from: "davidajoyce141@gmail.com",
         to: emailAdress,
-        subject: 'Nodemailer Project',
-        text: 'Hi from your coda twitter trend pack, here are your top tweets:\r\n' + bodyText
+        subject: 'Coda Tweet Trends',
+        text: textForEmail
       };
 
-      transporter.sendMail(mailOptions, function(err, data) {
-        if (err) {
-          console.log("Error " + err);
-        } else {
-          console.log("Email sent successfully");
-        }
-      });
+    transporter.sendMail(mailOptions, function(err, data) {
+    if (err) {
+        console.log("Error " + err);
+    } else {
+        console.log("Email sent successfully");
+    }
+    });
 }
 
 async function sendTweetsToCoda(trendTweets) {

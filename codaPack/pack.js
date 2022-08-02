@@ -58,6 +58,24 @@ const TrendSchema = coda.makeObjectSchema({
   featuredProperties: ["tweetText", "tweetUrl", "mentions","likes", "retweets"],
 });
 
+// A schema that defines a trends object.
+const TrendReducedSchema = coda.makeObjectSchema({
+  properties: {
+    tweetText: { type: coda.ValueType.String, fromKey: "TWEET_TXT" },
+    tweetUrl: {
+      type: coda.ValueType.String,
+      codaType: coda.ValueHintType.Url,
+      fromKey: "TWEET_URL",
+    },
+    likes: { type: coda.ValueType.Number, fromKey: "likes" },
+    replies: { type: coda.ValueType.Number, fromKey: "replies" },
+    retweets: { type: coda.ValueType.Number, fromKey: "retweets" },
+  },
+  displayProperty: "tweetText",
+  idProperty: "tweetText",
+  featuredProperties: ["tweetText", "tweetUrl", "retweets","likes", "replies"],
+});
+
 // A schema that defines a recent search object.
 const RecentSearchSchema = coda.makeObjectSchema({
   properties: {
@@ -143,23 +161,28 @@ pack.addSyncTable({
   name: "Trends",
   description: "All of the trends requested by user",
   identityName: "Trends",
-  schema: TrendSchema,
+  schema: TrendReducedSchema,
   formula: {
     name: "TrendTable",
     description: "Choose date to search your trends",
     parameters: [
       coda.makeParameter({
+        type: coda.ParameterType.String,
+        name: "trendRule",
+        description: "define trend rule",
+      }),
+      coda.makeParameter({
+        type: coda.ParameterType.String,
+        name: "emailAddress",
+        description: "email address to send coda tweet trends",
+      }),
+      coda.makeParameter({
         type: coda.ParameterType.Date,
         name: "dateTime",
         description: "input date and time",
       }),
-      coda.makeParameter({
-        type: coda.ParameterType.String,
-        name: "trendRule",
-        description: "define trend rule",
-      })
       ],
-    execute: async function ([dateTime,trendRule], context) {
+    execute: async function ([trendRule, emailAddress, dateTime], context) {
       // Get the page to start from.
       //let page = (context.sync.continuation?.page as number) || 1;
       // convert to minutes
@@ -169,7 +192,8 @@ pack.addSyncTable({
       // {  "add": [ { "value" : "(doge) sample:10"}] }
 
       var value = {"add": [{"value": trendRule}]}
-      let docId = context.invocationLocation.docId
+
+      let index: number = (context.sync.continuation?.index as number) || 10;
 
       let response = await context.fetcher.fetch({
       url: "https://twittercodahackathon.ts.r.appspot.com/rules",
@@ -179,9 +203,9 @@ pack.addSyncTable({
       },
       body: JSON.stringify({
         rule: value,
-        documentId: docId
+        email: emailAddress
       }),
-    });
+     });
 
       console.log("rule respone, ", response.body)
     
@@ -192,18 +216,25 @@ pack.addSyncTable({
        });
       let trends = trendResponse.body;
       console.log("results are", trends)
-      
-    
-      // If there were some results, re-run this formula for the next page.
-      /*let continuation;
-      if (repos.length > 0) {
-        continuation = { page: page + 1 };
-      }*/
 
-      // Return the repos and the continuation (if any).
+      if(trends.length == 0){
+        index = index - 1
+      } else {
+        index = 0
+      }
+      
+      let continuation;
+      if (index >= 0) {
+        continuation = {
+          index: index,
+        };
+      }
+
+      // Return the trends if there is any yet
+      // continues for a few more tries while streaming tweets are coming in
       return {
         result: trends,
-        //continuation: continuation,
+        continuation: continuation,
       };
     },
   },

@@ -3,6 +3,7 @@ const gcp_infra_svcs = require('.././services/gcp-infra.js');
 const config = require('../config.js');
 const axios = require("axios").default;
 var uuid = require('uuid');
+const api_svcs = require('.././services/api.js');
 
 const router = express.Router();
 
@@ -13,10 +14,10 @@ router.post("/", function (req, res) {
     var ruleId = uuid.v4()
     ruleBody["add"][0]["tag"] = ruleId
     console.log("rulebody is ", ruleBody)
-    var documentId = req.body["documentId"]
-    if(documentId == undefined){
-        documentId = "noDocumentId"
-    }
+    
+   if(emailAddress == undefined){
+    emailAddress = "no email address"
+   }
 
     let axiosConfig = {
         method: 'post',
@@ -25,7 +26,6 @@ router.post("/", function (req, res) {
         data: ruleBody
     };
     console.log('Rules: Request body ',req.body);
-    console.log('documentId is ', req.body["documentId"])
 
     axios(axiosConfig)
         .then(function (response) {
@@ -34,7 +34,7 @@ router.post("/", function (req, res) {
             res.json(response.data.data);
         })
         .then(function () {
-            setDocumentData(emailAddress, ruleId)
+            api_svcs.setDocumentData(emailAddress, ruleId)
         })
         .catch(function (error) {
             console.log(error);
@@ -62,25 +62,6 @@ router.get("/testdb", function (req, res) {
     getDocumentData('test')
     getRecord('users', gcp_infra_svcs.db)
 });
-
-async function setDocumentData(emailAddress, ruleId) {
-    const data = {
-        email: emailAddress
-    }
-
-    const result = await gcp_infra_svcs.db.collection('emails').doc(ruleId).set(data)
-    console.log("added email address is ", result)
-}
-
-async function getDocumentData(tagId){
-    const documentRef = gcp_infra_svcs.db.collection('emails').doc(tagId)
-    const doc = await documentRef.get()
-    if(!doc.exists) {
-        console.log('No such document');
-    } else {
-        console.log('Document data:', doc.data());
-    }
-}
 
 async function addRecord(docRef, firstName){
     const result = await docRef.set({

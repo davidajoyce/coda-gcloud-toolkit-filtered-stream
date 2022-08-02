@@ -39,7 +39,7 @@ async function getTrendsFromTag(minutes, tagId) {
         let tableName = config.gcp_infra.projectId + '.' + config.gcp_infra.bq.dataSetId + '.' + config.gcp_infra.bq.table.tweets;
         console.log('getTrends SQL ', utils.getTrendsTag(tableName, minutes, tagId));
         const options = {
-            query: utils.getTrendsTag(tableName, minutes),
+            query: utils.getTrendsTag(tableName, minutes, tagId),
             location: 'US',
         };
 

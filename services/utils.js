@@ -39,7 +39,7 @@ function getTrendsTag(tableName, minutes, tagId) {
   return `SELECT text as TWEET_TXT, tweet_url as TWEET_URL, public_metrics.like_count as likes, public_metrics.quote_count as quotes, 
   public_metrics.reply_count as replies, public_metrics.retweet_count as retweets, tag_id as TAG_ID
   FROM `+ tableName +`
-  WHERE tag_id = `+ tagId +`
+  WHERE tag_id = '${tagId}'
   AND created_at > DATETIME_SUB(current_datetime(), INTERVAL `+ minutes +`  MINUTE)
   ORDER BY retweets DESC`;
 }

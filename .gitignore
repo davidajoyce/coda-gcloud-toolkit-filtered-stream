@@ -1,2 +1,4 @@
 config.js
 service-account.json
+# dependencies
+node_modules
