@@ -104,7 +104,7 @@ pack.addSyncTable({
     execute: async function ([trendRule, trendRuleTag, emailAddress, dateTime], context) {
 
 
-      let tagId = trendRuleTag.trim();
+      let tagId = trendRuleTag.trim() +  trendRule.trim()
 
       let minutes = Math.trunc((Date.now() - dateTime.getTime())/60000)
       console.log("minutes: ", minutes)
