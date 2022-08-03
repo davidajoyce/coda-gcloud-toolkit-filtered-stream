@@ -75,8 +75,9 @@ router.get("/mail/:minutes", function(req, res) {
       // then send those
       // grab these from firebase
       // just need to make sure to get the data correctly from firebase 
-      let tagId = '09c7f63e-7762-4c85-a273-ff50a734f8da'
-      api_svcs.setDocumentData('davidajoyce141@gmail.com', tagId)
+      //let tagId = '09c7f63e-7762-4c85-a273-ff50a734f8da'
+      let tagId = 'b1c72bda-b9ad-43dd-9a38-8ff798d9b4d5'
+      //api_svcs.setDocumentData('davidajoyce141@gmail.com', tagId)
       //tagIdsToEmailAddress = [{tagId: "test", emailAdress: "test@gmail.com"}] 
       var map = new HashMap();
       //emailAddress.tagId = tagId
@@ -84,8 +85,8 @@ router.get("/mail/:minutes", function(req, res) {
       var minutes = req.params.minutes
       console.log("minutes:", minutes)
       // testing one ruleId for email address 
-      //tagIdsToEmailAddress = getTagsIdsFromEmail(tagId)
-      tagIdsToEmailAddress = tagIdsToEmailAddress();
+      tagIdsToEmailAddress = getTagsIdsFromEmail(tagId)
+      //tagIdsToEmailAddress = tagIdsToEmailAddress();
       //tagIdsToEmailAddress.push(emailAddress)
       //tweets = [];
       //console.log('tag id email address: ', tagIdsToEmailAddress)
@@ -107,6 +108,7 @@ router.get("/mail/:minutes", function(req, res) {
                        });
                     console.log("tweets to send to mail, ", map.values())
                     sendEmail(tagIdEmail.email, map.values())
+                    res.send("send emails to subscribers")
                 }
             })
         })
@@ -146,7 +148,7 @@ async function tagIdsToEmailAddress(){
     snapshot.forEach((doc) => {
         console.log(doc.id, '=>', doc.data());
         let emailData = doc.data();
-        emailData.tagId = tagId;
+        emailData.tagId = doc.id;
         tagIdToEmail.push(emailData);
     })
     return tagIdToEmail;
@@ -177,7 +179,9 @@ router.get("/push/:minutes", function (req, res) {
 
 function sendEmail(emailAdress, tweets){
     var bodyText = ''
-    tweets.forEach(tweet => {
+    if(tweets.length > 5 )
+    var tweetsToSend = tweets.slice(0, 4)
+    tweetsToSend.forEach(tweet => {
         bodyText = bodyText + tweet.TWEET_TXT + "," + "\r\n" + tweet.TWEET_URL + "\r\n\n"
     })
 

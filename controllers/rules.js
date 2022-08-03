@@ -45,27 +45,6 @@ router.post("/:tagId", function (req, res) {
         });
 });
 
-router.get("/testdb", function (req, res) {
-    /*
-    gcp_infra_svcs.createUnixSocketPool().then( async pool => {
-        await ensureSchema(pool);
-    }
-    ).catch(error => {
-        console.log("error: ", error)
-        res.send("table already created..");
-    })
-    */
-    const docRef = gcp_infra_svcs.db.collection('users').doc('alovelace');
-    console.log("docRef is ", docRef)
-
-    addRecord(docRef, "David")
-    var ruleId = uuid.v4()
-    setDocumentData("testDocId", ruleId)
-    
-    getDocumentData('test')
-    getRecord('users', gcp_infra_svcs.db)
-});
-
 async function addRecord(docRef, firstName){
     const result = await docRef.set({
         first: firstName,
