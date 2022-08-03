@@ -173,6 +173,11 @@ pack.addSyncTable({
       }),
       coda.makeParameter({
         type: coda.ParameterType.String,
+        name: "trendRuleTag",
+        description: "tag for rule you create",
+      }),
+      coda.makeParameter({
+        type: coda.ParameterType.String,
         name: "emailAddress",
         description: "email address to send coda tweet trends",
       }),
@@ -182,51 +187,73 @@ pack.addSyncTable({
         description: "input date and time",
       }),
       ],
-    execute: async function ([trendRule, emailAddress, dateTime], context) {
+    execute: async function ([trendRule, trendRuleTag, emailAddress, dateTime], context) {
       // Get the page to start from.
       //let page = (context.sync.continuation?.page as number) || 1;
       // convert to minutes
 
-      //let minutes = Math.trunc((Date.now() - dateTime.getTime())/60000)
-      //console.log("minutes: ", minutes)
+      let tagId = trendRuleTag.trim();
+
+      let minutes = Math.trunc((Date.now() - dateTime.getTime())/60000)
+      console.log("minutes: ", minutes)
       // {  "add": [ { "value" : "(doge) sample:10"}] }
 
       var value = {"add": [{"value": trendRule}]}
 
-      let index: number = (context.sync.continuation?.index as number) || 10;
+      var index: number = (context.sync.continuation?.index as number) || 10;
+      // this only works for the first sync then you have lost the tagId 
+      //let tagId: string = (context.sync.continuation?.tagId as string) || 'id' + (new Date()).getTime();
 
-      let response = await context.fetcher.fetch({
-      url: "https://twittercodahackathon.ts.r.appspot.com/rules",
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        rule: value,
-        email: emailAddress
-      }),
-     });
+      console.log("tagId is: ", tagId)
 
-      console.log("rule respone, ", response.body)
-    
+      if(index == 10){
+        let response = await context.fetcher.fetch({
+        url: `https://twittercodahackathon.ts.r.appspot.com/rules/${tagId}`,
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          rule: value,
+          email: emailAddress
+        }),
+      });
+
+        console.log("rule respone, ", response.body)
+
+        let streamResponse = await context.fetcher.fetch({
+        method: "GET",
+        url: `https://twittercodahackathon.ts.r.appspot.com/stream`,
+        cacheTtlSecs: 0
+        });
+        
+        console.log("stream response: ", streamResponse.body)
+      }
+      // tag to test out end to end solution 
+      let testTagId = "b1c72bda-b9ad-43dd-9a38-8ff798d9b4d5"
       let trendResponse = await context.fetcher.fetch({
       method: "GET",
-      url: `https://twittercodahackathon.ts.r.appspot.com/api/trends/${60}`,
+      url: `https://twittercodahackathon.ts.r.appspot.com/api/trends/${minutes}/${testTagId}`,
       cacheTtlSecs: 0
        });
       let trends = trendResponse.body;
       console.log("results are", trends)
+      console.log("results length is : ", trends.length)
+
+      console.log("index is going to be: ", index);
 
       if(trends.length == 0){
         index = index - 1
       } else {
         index = 0
       }
+
+      console.log("index is now: ", index);
       
       let continuation;
-      if (index >= 0) {
+      if (index > 0) {
         continuation = {
-          index: index,
+          index: index
         };
       }
 

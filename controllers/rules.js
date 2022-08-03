@@ -7,14 +7,16 @@ const api_svcs = require('.././services/api.js');
 
 const router = express.Router();
 
-router.post("/", function (req, res) {
+router.post("/:tagId", function (req, res) {
 
     var ruleBody = req.body["rule"]
     var emailAddress = req.body["email"]
-    var ruleId = uuid.v4()
+    //var ruleId = uuid.v4()
+    var ruleId = req.params.tagId
     ruleBody["add"][0]["tag"] = ruleId
     console.log("rulebody is ", ruleBody)
     
+
    if(emailAddress == undefined){
     emailAddress = "no email address"
    }
@@ -30,8 +32,9 @@ router.post("/", function (req, res) {
     axios(axiosConfig)
         .then(function (response) {
             if(response.data.errors)
-            res.json(response.data.errors);    
+            //res.json(response.data.errors);    
             res.json(response.data.data);
+            res.json(ruleId)
         })
         .then(function () {
             api_svcs.setDocumentData(emailAddress, ruleId)

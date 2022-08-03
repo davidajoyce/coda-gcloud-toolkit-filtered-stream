@@ -28,13 +28,14 @@ router.get("/", function (req, res) {
     res.send('API Services');
 });
 
-router.get("/trends/:minutes", function (req, res) {
+router.get("/trends/:minutes/:tagId", function (req, res) {
     console.log('-- API Services | Trending Data -- ');
     var map = new HashMap();
     var minutes = req.params.minutes
     console.log("minutes:", minutes)
+    var tagId = req.params.tagId
 
-    api_svcs.getTrends(minutes).then(function (results)  {
+    api_svcs.getTrendsFromTag(minutes, tagId).then(function (results)  {
         if(results) {
             console.log('result is ',results[0])
         
@@ -82,8 +83,9 @@ router.get("/mail/:minutes", function(req, res) {
 
       var minutes = req.params.minutes
       console.log("minutes:", minutes)
-      
-      tagIdsToEmailAddress = getTagsIdsFromEmail(tagId)
+      // testing one ruleId for email address 
+      //tagIdsToEmailAddress = getTagsIdsFromEmail(tagId)
+      tagIdsToEmailAddress = tagIdsToEmailAddress();
       //tagIdsToEmailAddress.push(emailAddress)
       //tweets = [];
       //console.log('tag id email address: ', tagIdsToEmailAddress)
@@ -136,6 +138,18 @@ async function getTagsIdsFromEmail(tagId){
         tagIdToEmail.push(emailData);
         return tagIdToEmail;
     }
+}
+
+async function tagIdsToEmailAddress(){
+    tagIdToEmail = []
+    const snapshot = await gcp_infra_svcs.db.collection('emails').get();
+    snapshot.forEach((doc) => {
+        console.log(doc.id, '=>', doc.data());
+        let emailData = doc.data();
+        emailData.tagId = tagId;
+        tagIdToEmail.push(emailData);
+    })
+    return tagIdToEmail;
 }
 
 router.get("/push/:minutes", function (req, res) {
