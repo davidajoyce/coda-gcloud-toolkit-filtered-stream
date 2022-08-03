@@ -2,7 +2,9 @@ var config = {};
 
 config.PORT = 4060;
 
-config.twitter_bearer_token = 'Bearer <<YOUR_TOKEN>>'
+config.twitter_bearer_token = 'Bearer <>'
+
+config.coda_api_key = ''
 
 config.filtered_stream = {
     "host" : 'https://api.twitter.com',
@@ -15,22 +17,41 @@ config.filtered_stream = {
     "poll_fields" : 'poll.fields=duration_minutes,end_datetime,id,options,voting_status'
 }
 
+config.mail = {
+    "MAIL_USERNAME" : 'davidajoyce141',
+    "MAIL_PASSWORD": '',
+    "OAUTH_CLIENTID": '',
+    "OAUTH_CLIENT_SECRET": '',
+    "OAUTH_REFRESH_TOKEN": ''
+}
+
 config.filtered_stream.rules = {
     "api" : 'https://api.twitter.com/2/tweets/search/stream/rules'
 }
 
+config.recent_search = {
+    "api" : 'https://api.twitter.com/2/tweets/search/recent'
+}
+
 config.gcp_infra = {
-    "projectId" : "twttr-des-sa-demo-dev",
-    "topicName" : "fs-crypto",
-    "subscriptionName" : "fs-crypto-sub",
+    "projectId" : "",
+    "topicName" : "coda-twitter",
+    "subscriptionName" : "coda-twitter-sub",
     "messageCount" : 100
 }
 config.gcp_infra.bq = {
-    "dataSetId": "fs_trends"
+    "dataSetId": "coda_trends"
 }
 config.gcp_infra.bq.table = {
     "tweets": "tweets",
-    "users": "users"
+    "users":  "users"
+}
+
+config.gcp_infra.cloudsql = {
+    "user": "postgres",
+    "password": "",
+    "database": "",
+    "instanceUnixSocket": ""
 }
 
 config.reconnectCounter = 3
