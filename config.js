@@ -18,7 +18,7 @@ config.filtered_stream = {
 }
 
 config.mail = {
-    "MAIL_USERNAME" : 'davidajoyce141',
+    "MAIL_USERNAME" : '',
     "MAIL_PASSWORD": '',
     "OAUTH_CLIENTID": '',
     "OAUTH_CLIENT_SECRET": '',
