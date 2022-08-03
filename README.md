@@ -2,6 +2,8 @@
 
 This project is forked from https://github.com/twitterdev/gcloud-toolkit-filtered-stream and has specific changes to create services to interact with a coda pack extension
 
+See codaPack folder for the pack script.
+
 Please see https://devpost.com/software/twitter-trends for more details on the submission along with the architecture diagram. 
 
 Find instructions on how to create your own stream service here: 
